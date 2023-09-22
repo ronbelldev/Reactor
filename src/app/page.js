@@ -1,95 +1,89 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client'
+import React, { useState } from 'react'
+import ClickableText from '../components/ClickableText'
+import Input from '../components/Input'
+import { notice } from '../utils/strings'
+import './index.scss'
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    const [isWithNotice, setIsWithNotice] = useState(true)
+    const [clientX, setClientX] = useState()
+    const [clientY, setClientY] = useState()
+    const [comments, setComments] = useState([])
+    const [inputValue, setInputValue] = useState('')
+    const [isShowInput, setIsShowInput] = useState(false)
+    const [modifyingComment, setModifyingComment] = useState()
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+    const onClickPage = e => {
+        if (isWithNotice) {
+            return
+        }
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+        setIsShowInput(true)
+        setClientX(e.clientX)
+        setClientY(e.clientY)
+    }
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+    const onKeyDown = e => {
+        if (e.key === 'Escape') {
+            setIsShowInput(false)
+            setModifyingComment()
+        }
+        if (e.key === 'Enter') {
+            if (modifyingComment) {
+                setComments(comments.map(comment => comment.id === modifyingComment.id ? ({ ...comment, text: inputValue}) : comment ))
+                setModifyingComment()
+            } else {
+                comments.push({top: clientY, left: clientX, text: inputValue, id: Date.now() })
+                setClientX()
+                setClientY()
+                setInputValue('')
+                setIsShowInput(false)
+            }
+        }
+    }
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
+    return (
+        <main className='main'>
+            {isWithNotice &&
+                <div className='notice' >
+                    {notice}
+                    <div className='hide-notice' onClick={() => setIsWithNotice(false)}>
+                         Confirm To Start
+                    </div>
+                </div>}
+            <div
+                className='home'
+                onClick={onClickPage}
+            >
+                {(isShowInput || modifyingComment) &&
+                    <Input
+                        label={modifyingComment ? 'Modify comment' : 'Add a comment'}
+                        onClick={e => e.stopPropagation()}
+                        className='input-client-position'
+                        onKeyDown={onKeyDown}
+                        value={inputValue}
+                        onChange={e => {
+                            setInputValue(e.target.value)
+                        }}
+                        style={{top: modifyingComment?.top + 50 || clientY, left: modifyingComment?.left || clientX}}
+                    />}
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+                {comments.map((comment, index) =>
+                    <div key={index} className='comment-client-position' style={{ top: comment.top, left: comment.left }}>
+                        <ClickableText
+                            onClick={e => {
+                                e.stopPropagation()
+                                setModifyingComment(comment)
+                                setInputValue(comment.text)
+                            }}
+                        >
+                            {comment.text}
+                        </ClickableText>
+                    </div>
+                )}
+
+            </div>
+        </main>
+    )
 }
